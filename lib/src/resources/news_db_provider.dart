@@ -1,23 +1,24 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
 import 'dart:io';
+
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
+
 import '../models/item_model.dart';
 
-//path+provider lib gives temp path on mobile devices
+//path_provider lib gives temp path on mobile devices
 class NewsDbProvider {
   Database db;
-  String Items = 'Items';
+  String Items_table = 'Items';
 
-  init()async{
-     Directory documentDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentDirectory.path,"items.db");
-    db = await openDatabase(path,
-    version: 1,
-    onCreate: (Database newDb,int version){
-newDb.execute("""
-CREATE TABLE $Items
-(
+  init() async {
+    Directory documentDirectory = await getApplicationDocumentsDirectory();
+    final path = join(documentDirectory.path, "items.db");
+    db = await openDatabase(
+      path,
+      version: 1,
+      onCreate: (Database newDb, int version) {
+        newDb.execute(""" CREATE TABLE $Items_table (
               id INTEGER PRIMARY KEY,
               type TEXT,
               by TEXT,
@@ -30,23 +31,25 @@ CREATE TABLE $Items
               url TEXT,
               score INTEGER,
               title TEXT,
-              descendants INTEGER
-            )
-""");
-    },);
+              descendants INTEGER ) """);
+      },
+    );
   }
 
-  fetchItem(int id) async{
-  final maps =   await db.query(Items
-    ,columns: null,
-    where: "id= ?",
-    whereArgs: [id]//whereArgs prevent from sqlInjection,
-    );
-  if(maps.length>0)
-    {
-
+  Future<ItemModel> fetchItem(int id) async {
+    final maps = await db.query(Items_table,
+        columns: null,
+        where: "id= ?",
+        whereArgs: [id] //whereArgs prevent from sqlInjection,
+        );
+    if (maps.length > 0) {
+      return ItemModel.fromDb(maps.first);
     }
 
     return null;
+  }
+
+  Future<int> addItem(ItemModel item) {
+    return db.insert(Items_table, item.toMap());
   }
 }
